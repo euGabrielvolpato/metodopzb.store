@@ -1,0 +1,356 @@
+{%- assign selected_variant = product.selected_or_first_available_variant -%}
+{%- assign color_label = 'color,colour,couleur,cor,colore,farbe,색,色,カラー,färg,farve,szín,barva' | split: ',' -%}
+
+{%- unless product.has_only_default_variant -%}
+  <div class="product-form__variants" {{ block.shopify_attributes }}>
+    {%- for option in product.options_with_values -%}
+      {%- assign downcase_option = option.name | downcase -%}
+      {%- capture option_name -%}{{ section.id }}-{{ product.id }}-{{ forloop.index }}{%- endcapture -%}
+
+      {%- assign option_selector_type = 'select' -%}
+
+      {%- if block.settings.color_mode != 'block' and block.settings.color_mode != 'dropdown' and color_label contains downcase_option -%}
+        {%- comment -%}NOTE: even if the merchant is using the mode to display variant images, if ALL variant do not have an associated image, we fallback to color{%- endcomment -%}
+
+        {%- assign has_image_attached_to_all_variants = true -%}
+
+        {%- for variant in product.variants -%}
+          {%- unless variant.image -%}
+            {%- assign has_image_attached_to_all_variants = false -%}
+            {%- break -%}
+          {%- endunless -%}
+        {%- endfor -%}
+
+        {%- if block.settings.color_mode == 'color' or has_image_attached_to_all_variants == false -%}
+          {%- assign option_selector_type = 'color' -%}
+        {%- else -%}
+          {%- assign option_selector_type = 'variant' -%}
+        {%- endif -%}
+      {%- else -%}
+        {%- if color_label contains downcase_option -%}
+          {%- if block.settings.color_mode == 'block' -%}
+            {%- assign option_selector_type = 'block' -%}
+          {%- endif -%}
+        {%- elsif block.settings.selector_mode == 'block' -%}
+          {%- assign option_selector_type = 'block' -%}
+        {%- endif -%}
+      {%- endif -%}
+
+      <div class="product-form__option" data-selector-type="{{ option_selector_type }}">
+        {%- case option_selector_type -%}
+          {%- when 'color' -%}
+            <span class="product-form__option-name text--strong">{{ option.name }}: <span class="product-form__selected-value">{{ option.selected_value }}</span></span>
+
+            <div class="color-swatch-list color-swatch-list--large">
+              {%- assign color_swatch_config = settings.color_swatch_config | newline_to_br | split: '<br />' -%}
+
+              {%- for value in option.values -%}
+                {%- assign downcased_value = value | downcase -%}
+                {%- capture color_id -%}{{ option_name }}-{{ forloop.index }}{%- endcapture -%}
+
+                <div class="color-swatch {% if downcased_value == 'white' or downcased_value == 'blanc' %}color-swatch--white{% endif %}">
+                  <input class="color-swatch__radio product-form__single-selector" type="radio" name="{{ option_name }}" id="{{ color_id }}" value="{{ value | escape }}" {% if option.selected_value == value %}checked{% endif %} data-option-position="{{ option.position }}">
+                  <label class="color-swatch__item" for="{{ color_id }}" style="{% render 'color-swatch-style', color_swatch_config: color_swatch_config, value: downcased_value %}" title="{{ value | escape }}">
+                    <span class="visually-hidden">{{ value }}</span>
+                    {%- render 'icon', icon: 'cross-sold-out' -%}
+                  </label>
+                </div>
+              {%- endfor -%}
+            </div>
+
+          {%- when 'variant' -%}
+            <span class="product-form__option-name text--strong">{{ option.name }}: <span class="product-form__selected-value">{{ option.selected_value }}</span></span>
+
+            <div class="variant-swatch-list">
+              {%- capture option_name -%}option{{ option.position }}{%- endcapture -%}
+
+              {%- for value in option.values -%}
+                {%- capture variant_swatch_id -%}{{ option_name }}-{{ forloop.index }}{%- endcapture -%}
+
+                {%- for variant in product.variants -%}
+                  {%- if variant[option_name] == value and variant.image -%}
+                    <div class="variant-swatch">
+                      <input class="variant-swatch__radio product-form__single-selector" type="radio" name="{{ option_name }}" id="{{ variant_swatch_id }}" value="{{ value | escape }}" {% if option.selected_value == value %}checked{% endif %} data-option-position="{{ option.position }}">
+
+                      <label class="variant-swatch__item" for="{{ variant_swatch_id }}" title="{{ value | escape }}">
+                        <div class="aspect-ratio" style="padding-bottom: {{ 100.0 | divided_by: variant.image.aspect_ratio }}%">
+                          <img src="{{ variant.image | img_url: '120x' }}" alt="{{ variant.image.alt | escape }}">
+                        </div>
+
+                        {% render 'icon', icon: 'cross-sold-out' %}
+                      </label>
+                    </div>
+
+                    {%- break -%}
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- endfor -%}
+            </div>
+
+          {%- when 'block' -%}
+        
+              
+              {% if product.tags contains 'qtd' %}
+            <div class="variantes">
+                  {% for variant in product.variants %}
+                  <div class="options">
+                    {% assign semtexto = variant.title | remove: 'UNIDADES' | remove: 'UNIDADE' | strip  %}
+                   
+                  	<input type="hidden" class="iddavariante" val="{{ variant.id }}" qtd="{{ variant.title | remove: 'UNIDADES' | remove: 'UNIDADE' | strip }}">
+                  
+                    <div class="bolinha col-1"><div class="selector-bola"></div></div>
+                  
+                    <div class="nomevar col-4">
+                      {% if semtexto == '2' %}
+                      <p class="selo">MAIS VENDIDO</p>
+                      {% endif %}
+                    	<p>{{ variant.title }}</p>
+	                </div>
+                  
+                    <div class="valorvar col-7">
+                      {% if semtexto == '2' %}
+                      <p class="selector-desconto" cup="CUPOM 20% OFF">CUPOM 20% OFF</p>
+                      {% elsif semtexto == '3' %}
+                      <p class="selector-desconto" cup="CUPOM 30% OFF">CUPOM 30% OFF</p>
+                      {% endif %}
+                      
+                      <p class="valorunico">{% if variant.compare_at_price != blank %} <span>{{ variant.compare_at_price | money }}</span>{% endif %}  <b>{{ variant.price | money }}</b></p>
+                      <p class="valortot">TOTAL: {% if variant.compare_at_price != blank %}<span>{{ variant.compare_at_price | times: semtexto | money }}</span>{% endif %} <b>{{ variant.price | times: semtexto | money }}</b></p>
+                    </div>
+                    
+                    </div>               
+                  {% endfor %}
+                </div>
+              <style>.product-block-list__wrapper{ min-height: 1050px; }</style>
+            {% else %}              
+            <span class="product-form__option-name text--strong">{{ option.name }}: <span class="product-form__selected-value">{{ option.selected_value }}</span></span>
+
+            <div class="block-swatch-list">
+              {%- for value in option.values -%}
+                {%- capture block_swatch_id -%}{{ option_name }}-{{ forloop.index }}{%- endcapture -%}
+
+                <div class="block-swatch">
+                  <input class="block-swatch__radio product-form__single-selector" type="radio" name="{{ option_name }}" id="{{ block_swatch_id }}" value="{{ value | escape }}" {% if option.selected_value == value %}checked{% endif %} data-option-position="{{ option.position }}">
+                  <label class="block-swatch__item" for="{{ block_swatch_id }}" title="{{ value | escape }}">
+                    <span class="block-swatch__item-text">{{ value }}</span>
+                  </label>
+                </div>
+              {%- endfor -%}
+            </div>
+		{% endif %}
+          {%- when 'select' -%}
+            <label for="{{ option_name }}" class="product-form__option-name text--strong">{{ option.name }}: <span class="product-form__selected-value">{{ option.selected_value }}</span></label>
+
+            <div class="select-wrapper select-wrapper--primary">
+              {%- render 'icon', icon: 'arrow-bottom' -%}
+
+              <select class="product-form__single-selector" name="{{ option_name }}" id="{{ option_name }}" data-option-position="{{ option.position }}">
+                {%- for value in option.values -%}
+                  <option value="{{ value | escape }}" {% if value == option.selected_value %}selected="selected"{% endif %}>{{ value }}</option>
+                {%- endfor -%}
+              </select>
+            </div>
+        {%- endcase -%}
+      </div>
+    {%- endfor -%}
+
+    <div class="no-js product-form__option">
+      <label class="product-form__option-name text--strong" for="product-select-{{ product.id }}">{{ 'product.form.variant' | t }}</label>
+
+      <div class="select-wrapper select-wrapper--primary">
+        <select id="product-select-{{ product.id }}" name="id">
+          {%- for variant in product.variants -%}
+            <option {% if variant == selected_variant %}selected="selected"{% endif %} {% unless variant.available %}disabled="disabled"{% endunless %} value="{{ variant.id }}" data-sku="{{ variant.sku }}">{{ variant.title }} - {{ variant.price | money }}</option>
+          {%- endfor -%}
+        </select>
+      </div>
+    </div>
+  </div>
+{%- else -%}
+  <input type="hidden" name="id" data-sku="{{ selected_variant.sku }}" value="{{ selected_variant.id }}">
+{%- endunless -%}
+
+<div class="product-form__info-list">
+  <div class="product-form__info-item">
+    <span class="product-form__info-title text--strong">{{ 'product.form.price' | t }}:</span>
+
+    <div class="product-form__info-content" role="region" aria-live="polite">
+      <div class="price-list">
+        {%- if selected_variant.compare_at_price > selected_variant.price -%}
+          <span class="price price--highlight precocheio">
+            <span class="visually-hidden">{{ 'product.general.sale_price' | t }}</span>
+
+            {%- if settings.currency_code_enabled -%}
+              {{- selected_variant.price | money_with_currency -}}
+            {%- else -%}
+              {{- selected_variant.price | money -}}
+            {%- endif -%}
+          </span>
+
+          <span class="price price--compare">
+            <span class="visually-hidden">{{ 'product.general.regular_price' | t }}</span>
+
+            {%- if settings.currency_code_enabled -%}
+              {{- selected_variant.compare_at_price | money_with_currency -}}
+            {%- else -%}
+              {{- selected_variant.compare_at_price | money -}}
+            {%- endif -%}
+          </span>
+        {%- else -%}
+          <span class="price precocheio">
+            <span class="visually-hidden">{{ 'product.general.sale_price' | t }}</span>
+
+            {%- if settings.currency_code_enabled -%}
+              {{- selected_variant.price | money_with_currency -}}
+            {%- else -%}
+              {{- selected_variant.price | money -}}
+            {%- endif -%}
+          </span>
+        {%- endif -%}
+      </div>
+
+      <div class="product-form__price-info" style="display: {% if selected_variant.unit_price_measurement %}block{% else %}none{% endif %}">
+        <div class="unit-price-measurement">
+          <span class="unit-price-measurement__price">{{ selected_variant.unit_price | money }}</span>
+          <span class="unit-price-measurement__separator">/ </span>
+
+          <span class="unit-price-measurement__reference-value" {%- if selected_variant.unit_price_measurement.reference_value == 1 -%}style="display: none"{% endif %}>
+            {{- selected_variant.unit_price_measurement.reference_value -}}
+          </span>
+
+          <span class="unit-price-measurement__reference-unit">{{ selected_variant.unit_price_measurement.reference_unit }}</span>
+        </div>
+      </div>
+                         <p class="parcelamento" style='font-size:15px; margin-top: 5px;'>ou por 12x de <span style="font-size:15px; color: black;"><b class="installment" style="font-size:14px;">{{ product.price |times: 1.2161 | divided_by: 12 | round:2 | money }} </b></span></p>
+
+  {%- capture product_labels -%}
+    {%- for tag in product.tags -%}
+      {%- if tag contains '__label:' -%}
+        <span class="product-label product-label--custom1">{{ tag | split: '__label:' | last }}</span>
+      {%- endif -%}
+
+      {%- if tag contains '__label1:' -%}
+        <span class="product-label product-label--custom1">{{ tag | split: '__label1:' | last }}</span>
+      {%- endif -%}
+
+      {%- if tag contains '__label2:' -%}
+        <span class="product-label product-label--custom2">{{ tag | split: '__label2:' | last }}</span>
+      {%- endif -%}
+    {%- endfor -%}
+
+    {%- if settings.show_discount -%}
+      {%- assign savings = 0 -%}
+
+      {%- if settings.discount_mode == 'percentage' -%}
+        {%- assign savings = selected_variant.compare_at_price | minus: selected_variant.price | times: 100.0 | divided_by: selected_variant.compare_at_price | round | append: '%' -%}
+      {%- else -%}
+        {%- capture savings -%}<span>{{ selected_variant.compare_at_price | minus: selected_variant.price | money }}</span>{%- endcapture -%}
+      {%- endif -%}
+
+      <span class="product-label product-label--on-sale savings" {% unless selected_variant.price < selected_variant.compare_at_price %}style="display: none"{% endunless %}>{{ 'collection.product.discount_html' | t: savings: savings }}</span>
+    {%- endif -%}
+  {%- endcapture -%}
+
+  {%- if product_labels != blank -%}
+    <div class="product-meta__label-list">
+      {{- product_labels -}}
+    </div>
+  {%- endif -%}
+      
+      {{- form | payment_terms -}}
+
+      {%- if block.settings.show_taxes_included -%}
+        {%- if cart.taxes_included or shop.shipping_policy.body != blank -%}
+          <p class="product-form__price-info">
+            {%- if cart.taxes_included -%}
+              {{ 'product.general.include_taxes' | t }}
+            {%- endif -%}
+
+            {%- if shop.shipping_policy.body != blank -%}
+              {{ 'product.general.shipping_policy_html' | t: link: shop.shipping_policy.url }}
+            {%- endif -%}
+          </p>
+        {%- endif -%}
+      {%- endif -%}
+    </div>
+  </div>
+
+  {%- if block.settings.show_inventory_quantity and product.template_suffix != 'pre-order' -%}
+    <div class="product-form__info-item">
+      <span class="product-form__info-title text--strong">{{ 'product.form.inventory' | t }}:</span>
+
+      <div class="product-form__info-content">
+        {%- if selected_variant.available -%}
+          {%- if selected_variant.inventory_management and selected_variant.inventory_policy == 'deny' and block.settings.low_inventory_threshold > 0 -%}
+            {%- if selected_variant.inventory_quantity <= block.settings.low_inventory_threshold -%}
+              <span class="product-form__inventory inventory inventory--low">{{ 'product.form.low_stock_with_quantity_count' | t: count: selected_variant.inventory_quantity }}</span>
+            {%- else -%}
+              <span class="product-form__inventory inventory inventory--high">{{ 'product.form.in_stock_with_quantity_count' | t: count: selected_variant.inventory_quantity }}</span>
+            {%- endif -%}
+          {%- else -%}
+            {%- if selected_variant.inventory_policy == 'continue' and selected_variant.inventory_quantity <= 0 and selected_variant.requires_shipping -%}
+              {%- if selected_variant.incoming -%}
+                {%- capture next_incoming_date -%}{{ selected_variant.next_incoming_date | date: format: 'date' }}{%- endcapture -%}
+                <span class="product-form__inventory inventory inventory--high">{{ 'product.form.incoming_stock' | t: next_incoming_date: next_incoming_date }}</span>
+              {%- else -%}
+                <span class="product-form__inventory inventory inventory--high">{{ 'product.form.oversell_stock' | t }}</span>
+              {%- endif -%}
+            {%- else -%}
+              <span class="product-form__inventory inventory inventory--high">{{ 'product.form.in_stock' | t }}</span>
+            {%- endif -%}
+          {%- endif -%}
+        {%- else -%}
+          <span class="product-form__inventory inventory">{{ 'product.form.sold_out' | t }}</span>
+        {%- endif -%}
+
+        {%- for tag in product.tags -%}
+          {%- if tag contains '__stock:' -%}
+            {%- assign stock_countdown_max = tag | split: '__stock:' | last | times: 1.0 -%}
+            {%- assign stock_countdown_progress = selected_variant.inventory_quantity | divided_by: stock_countdown_max | times: 100.0 | at_least: 0 | at_most: 100 -%}
+
+            <span class="inventory-bar {% if stock_countdown_progress == 0 %}inventory-bar--hidden{% endif %}" data-stock-countdown-max="{{ stock_countdown_max }}">
+              <span class="inventory-bar__progress" style="width: 100%"></span>
+            </span>
+
+            {%- break -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- if product.template_suffix != 'contact' -%}
+    {%- if block.settings.show_quantity_selector -%}
+      <div class="product-form__info-item product-form__info-item--quantity">
+        <label for="{{ section.id }}-{{ product.id }}-quantity" class="product-form__info-title text--strong">{{ 'product.form.quantity' | t }}:</label>        
+        <div class="product-form__info-content">
+          <div class="quantity-selector quantity-selector--product">
+            <button type="button" class="quantity-selector__button" data-action="decrease-picker-quantity" aria-label="{{ 'cart.items.decrease_quantity' | t }}" title="{{ 'cart.items.decrease_quantity' | t }}">{% render 'icon', icon: 'minus' %}</button>
+            <input name="quantity" aria-label="{{ 'product.form.quantity' | t }}" class="quantity-selector__value" inputmode="numeric" value="1" size="3">
+            <button type="button" class="quantity-selector__button" data-action="increase-picker-quantity" aria-label="{{ 'cart.items.increase_quantity' | t }}" title="{{ 'cart.items.increase_quantity' | t }}">{% render 'icon', icon: 'plus' %}</button>
+          </div>
+        </div>
+      </div>
+    {%- else -%}
+      <input type="hidden" name="quantity" value="1">
+    {%- endif -%}
+  {%- endif -%}
+</div>
+    
+      
+  <span class="tempofrete" style="padding-bottom: 0px">
+    <figure style="fill:#008A00;float:left;margin: 5px 10px 0px 0px;"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><path fill-rule="nonzero" d="M10.587 14.805H7.01a2.452 2.452 0 1 1-4.452-1.937l-1.56-.003.002-1.2 3.6.008v.025h.048c1.167 0 2.143.815 2.39 1.907h3.52a2.455 2.455 0 0 1 1.836-1.844l2.423-6.352a.6.6 0 0 0-.56-.814H4.6v-1.2h9.658a1.8 1.8 0 0 1 1.697 2.4h1.677l1.409 4.225-2.027 4.787-1.701-.007a2.452 2.452 0 0 1-4.726.005zm4.751-1.205l.883.004 1.538-3.634-.991-2.975h-1.27l-1.835 4.809c.834.253 1.48.939 1.675 1.796zM7 5.79v1.2H1v-1.2h6zM4.6 8.222v1.2H2.2v-1.2h2.4zm.049 7.178a1.251 1.251 0 1 0 0-2.502 1.251 1.251 0 0 0 0 2.502zm8.3 0a1.251 1.251 0 1 0 0-2.502 1.251 1.251 0 0 0 0 2.502z"></path></svg></figure>
+    <p style="overflow: hidden; margin-top:0px"><span style="color:#008A00">Frete grátis para todo Brasil <svg style="fill:#008A00;margin-left:5px" width="41" height="0" viewBox="0 0 41 13" xmlns="http://www.w3.org/2000/svg"><path fill-rule="nonzero" d="M2.628 0h5.255L5.255 4.643h4.38L2.628 13l1.751-5.571H0L2.628 0zm11.589 9.533h-1.959l1.674-7.515H19.5l-.376 1.69h-3.61l-.25 1.172h3.519l-.376 1.69h-3.53l-.66 2.963zm9.468.136c-2.334 0-3.484-1.105-3.484-2.682 0-.124.034-.383.057-.496l1.002-4.473h1.992l-.99 4.428c-.012.057-.034.18-.034.316.011.62.49 1.217 1.457 1.217 1.048 0 1.583-.654 1.776-1.533l.991-4.428h1.981l-.99 4.462c-.41 1.825-1.412 3.189-3.758 3.189zm10.118-.136h-5.01l1.673-7.515h1.959l-1.287 5.825h3.04l-.375 1.69zm6.678 0h-5.01l1.674-7.515h1.959l-1.287 5.825h3.04l-.376 1.69z"></path></svg> </span> 
+    <br> <span style="font-size:14px;display:block;line-height:19px"> Comprando dentro das próximas <span style="color:red">2 h 57 min</span></span></p>
+
+
+  <div style="padding-bottom: 20px">    
+    <span style="color: #008A00; font-size:14px"><i style="vertical-align: middle;padding-right:5px;"><svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-check-circle" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M8 15A7 7 0 1 0 8 1a7 7 0 0 0 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+<path fill-rule="evenodd" d="M10.97 4.97a.75.75 0 0 1 1.071 1.05l-3.992 4.99a.75.75 0 0 1-1.08.02L4.324 8.384a.75.75 0 1 1 1.06-1.06l2.094 2.093 3.473-4.425a.236.236 0 0 1 .02-.022z"/>
+</svg></i> Garantia de 30 dias em nossa loja</span><br>
+    <span style="color: #008A00; font-size:14px"><i style="vertical-align: middle;padding-right:5px;"><svg width="1em" height="1em" viewBox="0 0 16 16" class="bi bi-bootstrap-reboot" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+<path fill-rule="evenodd" d="M1.161 8a6.84 6.84 0 1 0 6.842-6.84.58.58 0 0 1 0-1.16 8 8 0 1 1-6.556 3.412l-.663-.577a.58.58 0 0 1 .227-.997l2.52-.69a.58.58 0 0 1 .728.633l-.332 2.592a.58.58 0 0 1-.956.364l-.643-.56A6.812 6.812 0 0 0 1.16 8zm5.48-.079V5.277h1.57c.881 0 1.416.499 1.416 1.32 0 .84-.504 1.324-1.386 1.324h-1.6zm0 3.75V8.843h1.57l1.498 2.828h1.314L9.377 8.665c.897-.3 1.427-1.106 1.427-2.1 0-1.37-.943-2.246-2.456-2.246H5.5v7.352h1.141z"/>
+</svg></i> 7 dias para trocas e devoluções</span></div>
+
+  
